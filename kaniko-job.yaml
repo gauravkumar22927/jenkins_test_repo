@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kaniko-build
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+
+      volumes:
+      - name: workspace
+        emptyDir: {}
+
+      initContainers:
+      - name: git-clone
+        image: alpine/git
+        command:
+        - sh
+        - -c
+        - |
+          git clone --branch BRANCH_NAME https://github.com/gauravkumar22927/jenkins_test_repo.git /workspace
+        volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+
+      containers:
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:latest
+        args:
+        - "--dockerfile=/workspace/Dockerfile"
+        - "--context=/workspace"
+        - "--destination=local-registry:5000/myapp:IMAGE_TAG"
+        - "--insecure"
+        - "--skip-tls-verify"
+        volumeMounts:
+        - name: workspace
+          mountPath: /workspace
